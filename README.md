@@ -35,7 +35,7 @@ Before attending this workshop, please ensure you have:
 
 ### Hardware Requirements
 - **Laptop/Desktop**: Any modern computer with 8GB+ RAM for SSH and management tasks
-- **Homelab Hardware**: A 3-node Proxmox cluster (provided reference configuration below)
+- **Homelab Hardware**: Proxmox server (provided during workshop)
 
 ### Software & Knowledge
 - **Linux Basics**: Comfort with command line, basic file system navigation
@@ -62,7 +62,7 @@ Master the fundamentals before building.
 | 0:00 | **What is Homelab?** Why build one, use cases, getting started | 10 min |
 | 0:10 | **Hardware Selection** Mini PCs, specs, budget, power analysis | 10 min |
 | 0:20 | **Network & Infrastructure Design** VLANs, IP scheme, security | 15 min |
-| 0:35 | **Proxmox Overview & Setup** Installation, clustering, LXC vs VMs | 15 min |
+| 0:35 | **Proxmox Overview & Setup** Installation, LXC vs VMs | 15 min |
 | 0:50 | **Q&A** | 5 min |
 
 **Session 1 Materials**: [Theory Slides](./slides/session-1-theory.md) | [Documentation](./docs/session-1/)
@@ -162,7 +162,7 @@ cat docs/session-1/02-getting-started.md
 
 ### 4. Prepare Your Homelab
 
-Follow the guides to set up your Proxmox cluster:
+Follow the guides to set up Proxmox:
 
 ```bash
 # Hardware selection guide
@@ -197,53 +197,67 @@ docker-compose up -d
 
 ## Reference Hardware & Network
 
-### Cluster Configuration
+### Server Configuration
 
-This workshop uses a 3-node Proxmox cluster for redundancy and load distribution:
+Each workshop group gets their own dedicated Proxmox server:
 
-| Node | Hardware | Role | IP Address |
-|------|----------|------|-----------|
-| **pve-01** | Lenovo ThinkCentre M920q | Primary | 192.168.10.21 |
-| **pve-02** | Dell OptiPlex 3060 Micro | Secondary | 192.168.10.22 |
-| **pve-03** | Dell OptiPlex 3060 Micro | Tertiary | 192.168.10.23 |
-| **docker-host** | LXC Container on Cluster | Services | 192.168.10.50 |
+| Server | Hardware | Group | IP Address |
+|--------|----------|-------|-----------|
+| **prx01** | Lenovo ThinkCentre M920q | Group 1 | 192.168.10.101 |
+| **prx02** | Dell OptiPlex 3060 Micro | Group 2 | 192.168.10.102 |
+| **prx03** | Dell OptiPlex 3060 Micro | Group 3 | 192.168.10.103 |
 
 ### Network Architecture
 
+#### Simple Topology (No VLANs)
+
+All devices on one flat network — simple, works fine for getting started.
+
 ```mermaid
-graph TB
-    subgraph "Home Network"
-        direction TB
-        ISP["Internet / ISP"]
-        MR["MikroTik Router<br/>192.168.10.1"]
+graph TD
+    Internet((Internet)) -->|WAN| Router["MikroTik Router
+    192.168.1.1"]
 
-        subgraph "Management VLAN 192.168.10.0/24"
-            TS["TP-Link Switch"]
+    Router -->|LAN| Switch[TP-Link Switch]
+    Switch -->|LAN| prx01["prx01
+    192.168.1.101"]
+    Switch -->|LAN| prx02["prx02
+    192.168.1.102"]
+    Switch -->|LAN| prx03["prx03
+    192.168.1.103"]
 
-            subgraph "Proxmox Cluster"
-                PVE1["pve-01<br/>192.168.10.21<br/>ThinkCentre M920q"]
-                PVE2["pve-02<br/>192.168.10.22<br/>OptiPlex 3060"]
-                PVE3["pve-03<br/>192.168.10.23<br/>OptiPlex 3060"]
-            end
+    Router -.->|WiFi| PC[Laptops and PCs]
+    Router -.->|WiFi| Phone[Phones]
+```
 
-            DH["docker-host LXC<br/>192.168.10.50<br/>Services"]
-        end
-    end
+#### Advanced Topology (With VLANs)
 
-    ISP -->|WAN| MR
-    MR -->|192.168.10.0/24| TS
-    TS --> PVE1
-    TS --> PVE2
-    TS --> PVE3
-    PVE1 -.->|Cluster Network| PVE2
-    PVE1 -.->|Cluster Network| PVE3
-    PVE2 -.->|Cluster Network| PVE3
-    subgraph "Hosted on Cluster"
-        DH
-    end
-    PVE1 --- DH
-    PVE2 --- DH
-    PVE3 --- DH
+Each port/SSID maps to a VLAN — isolated networks for security.
+
+```mermaid
+graph TD
+    Internet((Internet)) -->|WAN| Router["MikroTik Router
+    192.168.10.1"]
+
+    Router -->|VLAN 10| Switch[TP-Link Switch]
+    Switch --> prx01["prx01
+    192.168.10.21"]
+    Switch --> prx02["prx02
+    192.168.10.22"]
+    Switch --> prx03["prx03
+    192.168.10.23"]
+
+    Router -->|VLAN 20| GMK["GMKtec Media
+    192.168.20.10"]
+    GMK --- DAS["TerraMaster DAS
+    24TB"]
+
+    Router -->|VLAN 30| PC["Main PC
+    192.168.30.30"]
+
+    Router -.->|VLAN 30| Trusted[Trusted WiFi]
+    Router -.->|VLAN 40| IoT[IoT WiFi]
+    Router -.->|VLAN 50| Guest[Guest WiFi]
 ```
 
 ### Network Details
@@ -309,9 +323,7 @@ Build your knowledge foundation with these detailed guides:
 5. **[Proxmox Setup](./docs/session-1/05-proxmox-setup.md)**
    - Installation from ISO
    - Initial configuration
-   - Cluster formation
    - Storage backend selection
-   - High availability setup
 
 ### Session 2: Hands-On Implementation
 
@@ -436,7 +448,7 @@ Ready to start? Here's your path forward:
 1. **Today**: Read through [What is Homelab?](./docs/session-1/01-what-is-homelab.md)
 2. **This Week**: Plan your hardware using [Hardware Selection](./docs/session-1/03-hardware-selection.md)
 3. **Next Week**: Design your network with [Network Infrastructure](./docs/session-1/04-network-infrastructure.md)
-4. **Then**: Follow [Proxmox Setup](./docs/session-1/05-proxmox-setup.md) to build your cluster
+4. **Then**: Follow [Proxmox Setup](./docs/session-1/05-proxmox-setup.md) to set up your server
 5. **Finally**: Deploy automatically with Sessions 2 guides
 
 **Good luck, and welcome to your homelab journey!**

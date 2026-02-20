@@ -1,0 +1,7 @@
+graph LR
+    Devices[All Devices] --> AG["AdGuard Home
+    192.168.10.50"]
+    AG -->|Allowed| Upstream["1.1.1.1
+    8.8.8.8"]
+    AG -->|Blocked| Block["Ads, trackers, malware
+    returned as 0.0.0.0"]

@@ -71,18 +71,39 @@ services:
     environment:
       - TUNNEL_TOKEN=your-cloudflare-tunnel-token-here
 
-  # Homarr - Lightweight dashboard for homelab services
-  homarr:
-    image: ghcr.io/ajnart/homarr:latest
-    container_name: homarr
+  # WordPress Database
+  wordpress-db:
+    image: mysql:8.0
+    container_name: wordpress-db
     restart: unless-stopped
-    ports:
-      - "7575:7575"
     volumes:
-      - ./homarr/configs:/app/data/configs
-      - ./homarr/icons:/app/public/icons
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ./wordpress/db:/var/lib/mysql
     environment:
+      - MYSQL_ROOT_PASSWORD=rootpass
+      - MYSQL_DATABASE=wordpress
+      - MYSQL_USER=wp
+      - MYSQL_PASSWORD=wppass123
+      - TZ=UTC
+
+  # WordPress - Self-hosted website/blog
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress
+    restart: unless-stopped
+    depends_on:
+      - wordpress-db
+    ports:
+      - "8888:80"
+    volumes:
+      - ./wordpress/html:/var/www/html
+    environment:
+      - WORDPRESS_DB_HOST=wordpress-db
+      - WORDPRESS_DB_USER=wp
+      - WORDPRESS_DB_PASSWORD=wppass123
+      - WORDPRESS_DB_NAME=wordpress
+      - WORDPRESS_CONFIG_EXTRA=
+          define('WP_HOME','http://192.168.10.50:8888');
+          define('WP_SITEURL','http://192.168.10.50:8888');
       - TZ=UTC
 
 # You can add more services here as needed:

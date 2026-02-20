@@ -447,7 +447,7 @@ mkdir -p /docker && cd /docker
 | **Portainer** | Docker management web UI | `:9000` |
 | **Vaultwarden** | Self-hosted Bitwarden passwords | `:8090` |
 | **Cloudflare Tunnel** | Expose services to internet securely | — |
-| **Homarr** | Dashboard for all your services | `:7575` |
+| **WordPress + MySQL** | Self-hosted website/blog | `:8888` |
 
 All defined in a single `docker-compose.yml` file.
 All running on one LXC container.
@@ -520,14 +520,34 @@ services:
     environment:
       - TUNNEL_TOKEN=your-cloudflare-tunnel-token
 
-  homarr:
-    image: ghcr.io/ajnart/homarr:latest
-    container_name: homarr
+  wordpress-db:
+    image: mysql:8.0
+    container_name: wordpress-db
     restart: unless-stopped
-    ports: ["7575:7575"]
     volumes:
-      - ./homarr/configs:/app/data/configs
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ./wordpress/db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpass
+      - MYSQL_DATABASE=wordpress
+      - MYSQL_USER=wp
+      - MYSQL_PASSWORD=wppass123
+
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress
+    restart: unless-stopped
+    depends_on: [wordpress-db]
+    ports: ["8888:80"]
+    volumes:
+      - ./wordpress/html:/var/www/html
+    environment:
+      - WORDPRESS_DB_HOST=wordpress-db
+      - WORDPRESS_DB_USER=wp
+      - WORDPRESS_DB_PASSWORD=wppass123
+      - WORDPRESS_DB_NAME=wordpress
+      - WORDPRESS_CONFIG_EXTRA=
+          define('WP_HOME','http://192.168.10.50:8888');
+          define('WP_SITEURL','http://192.168.10.50:8888');
 ```
 
 <!-- The full compose file is in configs/docker-compose/ in the workshop repo. Copy it from there instead of typing. -->
@@ -553,7 +573,8 @@ nginx-proxy-manager   Up
 portainer             Up
 vaultwarden           Up
 cloudflared           Up
-homarr                Up
+wordpress-db          Up
+wordpress             Up
 ```
 
 ### Useful commands:
@@ -564,7 +585,7 @@ docker compose restart          # Restart all
 docker compose pull && docker compose up -d  # Update all
 ```
 
-<!-- All 6 containers should show "Up". If any show "Restarting", check logs with docker compose logs <name>. -->
+<!-- All 7 containers should show "Up". If any show "Restarting", check logs with docker compose logs <name>. -->
 
 ---
 
@@ -597,7 +618,7 @@ DNS flow:  All devices → AdGuard (192.168.10.50:53) → 1.1.1.1
 | **Nginx Proxy Mgr** | `http://192.168.10.50:81` | `admin@example.com` / `changeme` |
 | **Portainer** | `http://192.168.10.50:9000` | Set on first visit |
 | **Vaultwarden** | `http://192.168.10.50:8090` | Create account |
-| **Homarr** | `http://192.168.10.50:7575` | No auth by default |
+| **WordPress** | `http://192.168.10.50:8888` | Set during setup |
 
 **Via Tailscale (remote):** Replace `192.168.10.50` with Tailscale IP (`100.x.x.x`)
 
@@ -637,12 +658,12 @@ Full setup guides in **`docs/session-2/05-additional-services.md`**
 # What You Built Today
 
 - **Terraform-managed** LXC container on Proxmox
-- **6-service** Docker Compose stack
+- **7-service** Docker Compose stack
 - **Tailscale VPN** for remote access
 - **AdGuard Home** — network-wide ad blocking
 - **Vaultwarden** — self-hosted password manager
 - **Nginx Proxy Manager** — reverse proxy with SSL
-- **Portainer, Cloudflare Tunnel, Homarr**
+- **Portainer, Cloudflare Tunnel, WordPress**
 
 ---
 
@@ -690,7 +711,7 @@ All docs, configs, and references are in this repository.
   `terraform apply` recreates containers, `docker compose up -d` restarts services
 
 - **"Can I run this on a single machine?"**
-  Absolutely — skip clustering, everything else works the same
+  Absolutely — everything works the same on a single node
 
 ### Thank you! Happy homelabbing!
 

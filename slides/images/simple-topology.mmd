@@ -1,0 +1,14 @@
+graph TD
+    Internet((Internet)) -->|WAN| Router["MikroTik Router
+    192.168.1.1"]
+
+    Router -->|LAN| Switch[TP-Link Switch]
+    Switch -->|LAN| prx01["prx01
+    192.168.1.101"]
+    Switch -->|LAN| prx02["prx02
+    192.168.1.102"]
+    Switch -->|LAN| prx03["prx03
+    192.168.1.103"]
+
+    Router -.->|WiFi| PC[Laptops and PCs]
+    Router -.->|WiFi| Phone[Phones]

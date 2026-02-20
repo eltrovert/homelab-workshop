@@ -52,7 +52,7 @@ Build production-like infrastructure from the ground up
 | 10 min | **What is a Homelab?** Why build one, use cases |
 | 10 min | **Hardware Selection** Mini PCs, specs, budget |
 | 15 min | **Network Design** VLANs, IP scheme, security |
-| 15 min | **Proxmox** Installation, clustering, LXC vs VMs |
+| 15 min | **Proxmox** Installation, LXC vs VMs |
 | 5 min | **Q&A** |
 
 **Total: ~55 minutes**
@@ -158,7 +158,7 @@ A **personal computing environment** where you build, configure, and manage your
 - **16GB** DDR4 RAM - 256GB NVMe SSD
 - ~35W typical - **~$250 each used**
 
-### Cluster Total
+### Total
 **14 cores | 28 threads | 64GB RAM | 1TB SSD | ~135W | ~$900**
 
 <!-- The M920q as master has extra RAM for control planes. The OptiPlex workers are identical for predictable performance. All 8th gen Intel for consistent behavior. -->
@@ -179,7 +179,7 @@ A **personal computing environment** where you build, configure, and manage your
 **Comparison:**
 - Gaming PC running 24/7: **$35/month**
 - Enterprise Dell R720: **$30/month**
-- Our mini PC cluster: **$15/month**
+- Our mini PCs (3 nodes): **$15/month**
 
 <!-- Power efficiency is the #1 reason to use mini PCs. The electricity savings pay for the hardware difference vs enterprise servers in about 3 years. -->
 
@@ -235,44 +235,33 @@ Proxmox nodes  → VLAN 10 → management only
 
 ---
 
-# Network Topology
+# Simple Topology (No VLANs)
 
-```mermaid[Network Topology]
-graph TD
-    Internet((Internet)) --> Router[MikroTik Router<br/>192.168.10.1]
+All devices on **one flat network** — simple, works fine for getting started.
 
-    Router -->|ether2<br/>VLAN 10| Switch[TP-Link Switch]
-    Switch --> prx01[prx01<br/>.101]
-    Switch --> prx02[prx02<br/>.102]
-    Switch --> prx03[prx03<br/>.103]
+![h:450](images/simple-topology.svg)
 
-    Router -->|ether3<br/>VLAN 20| GMK[GMKtec Media<br/>.20.10]
-    GMK --- DAS[TerraMaster DAS<br/>24TB]
+<!-- This is the simplest setup. Everything shares one subnet. Good for learning, but no isolation between devices. -->
 
-    Router -->|ether4<br/>VLAN 30| PC[Main PC<br/>.30.30]
+---
 
-    Router -.->|WiFi| W1[Main SSID → VLAN 30]
-    Router -.->|WiFi| W2[IoT SSID → VLAN 40]
-    Router -.->|WiFi| W3[Guest SSID → VLAN 50]
-```
+# Advanced Topology (With VLANs)
 
-<!-- Each physical port on the router maps to a VLAN. WiFi SSIDs also map to VLANs. This means a guest on your WiFi is completely isolated from your servers. -->
+![h:315](images/advanced-topology.svg)
+
+Each port/SSID maps to a VLAN — **isolated networks** for security.
+
+<!-- This is the production setup. A hacked IoT device can't reach your servers. Guest WiFi can't see your management network. This is how enterprises do it. -->
 
 ---
 
 # DNS & Ad Blocking
 
-```mermaid[DNS Flow]
-graph LR
-    Devices[All Devices] --> AG[AdGuard Home<br/>192.168.10.50]
-    AG -->|Allowed| Upstream[1.1.1.1 / 8.8.8.8]
-    AG -->|Blocked| Block[Ads, trackers, malware<br/>→ 0.0.0.0]
-```
+![h:350](images/dns-flow.svg)
 
-- **AdGuard Home** runs on Docker host LXC container
+- **AdGuard Home** on Docker host — network-wide ad blocking
 - All VLANs use AdGuard as DNS server via DHCP
-- Network-wide ad blocking — **every device, no app needed**
-- ~30% of DNS queries get blocked (ads, telemetry, trackers)
+- ~30% of DNS queries blocked (ads, telemetry, trackers)
 
 <!-- DNS-level blocking is the most effective ad blocking. It works on smart TVs, phones, IoT devices - everything. No browser extension needed. -->
 
@@ -291,19 +280,15 @@ graph LR
 
 **Open-source virtualization platform** (free, based on Debian Linux)
 
-- Run **VMs** (full virtual machines) and **LXC containers** (lightweight)
+- Run **VMs** and **LXC containers** (lightweight)
 - Web-based management UI at `https://node-ip:8006`
-- Built-in clustering, snapshots, backups
-- Massive community and documentation
-
-### Why Proxmox?
+- Built-in snapshots, backups, massive community
 
 | | Proxmox | VMware ESXi | Hyper-V |
 |---|---|---|---|
-| **Cost** | Free | $$$ (free tier limited) | Windows license |
-| **Linux support** | Excellent | Good | OK |
+| **Cost** | Free | $$$ | Windows license |
+| **Linux** | Excellent | Good | OK |
 | **Community** | Huge | Enterprise | Enterprise |
-| **Learning curve** | Moderate | Steep | Moderate |
 
 <!-- Proxmox is the homelab standard. Free, powerful, great community. The web UI is intuitive - you can create VMs, manage storage, and monitor resources all from a browser. -->
 
@@ -329,26 +314,23 @@ We'll deploy a **Docker host as an LXC container** in Session 2.
 
 ---
 
-# Proxmox Cluster Setup
+# Proxmox Setup
 
-### 3-Node Cluster = High Availability
+### Each group gets their own Proxmox server
 
-```mermaid[Proxmox Cluster]
-graph TD
-    prx01[prx01] <-->|Quorum| prx02[prx02]
-    prx02 <-->|Quorum| prx03[prx03]
-    prx03 <-->|Quorum| prx01
-```
+| Group | Server | IP |
+|-------|--------|-----|
+| Group 1 | prx01 | 192.168.10.101 |
+| Group 2 | prx02 | 192.168.10.102 |
+| Group 3 | prx03 | 192.168.10.103 |
 
 **Setup steps:**
 1. Install Proxmox on each node (USB boot, ~15 min each)
-2. On prx01: `pvecm create homelab-cluster`
-3. On prx02/03: `pvecm add 192.168.10.129`
-4. Create **API token** for Terraform: Datacenter → Permissions → API Tokens
+2. Create **API token** for Terraform: Datacenter → Permissions → API Tokens
 
 **API Token** bridges us to **Session 2** → Infrastructure as Code
 
-<!-- 3 nodes is the minimum for quorum - the cluster survives if one node goes down. The API token we create here is what Terraform will use to provision containers automatically. -->
+<!-- Each group works independently on their own Proxmox server. The API token we create here is what Terraform will use to provision containers automatically. -->
 
 ---
 
@@ -367,7 +349,7 @@ graph TD
 - **Homelabs** — personal infrastructure for learning & self-hosting
 - **Hardware** — mini PCs: efficient, quiet, affordable (~$900 total)
 - **Network** — 5 VLANs for security segmentation
-- **Proxmox** — free virtualization with clustering
+- **Proxmox** — free virtualization platform
 
 ### Coming up in Session 2 (Hands-on):
 1. Deploy infrastructure with **Terraform**

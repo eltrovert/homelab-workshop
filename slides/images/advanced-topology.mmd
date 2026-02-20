@@ -1,0 +1,32 @@
+graph TD
+    Internet((Internet)) --> Router[MikroTik Router]
+
+    Router --> Switch
+    Router --> GMK
+    Router --> PC
+    Router -.-> WiFi30
+    Router -.-> WiFi40
+    Router -.-> WiFi50
+
+    subgraph VLAN10[VLAN 10 - Management]
+        Switch[Switch] --> prx01[prx01]
+        Switch --> prx02[prx02]
+        Switch --> prx03[prx03]
+    end
+
+    subgraph VLAN20[VLAN 20 - Servers]
+        GMK[GMKtec] --- DAS[TerraMaster 24TB]
+    end
+
+    subgraph VLAN30[VLAN 30 - Trusted]
+        PC[Main PC]
+        WiFi30[Trusted WiFi]
+    end
+
+    subgraph VLAN40[VLAN 40 - IoT]
+        WiFi40[IoT WiFi]
+    end
+
+    subgraph VLAN50[VLAN 50 - Guest]
+        WiFi50[Guest WiFi]
+    end
