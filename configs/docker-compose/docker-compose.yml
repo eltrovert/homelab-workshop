@@ -1,0 +1,92 @@
+services:
+  # AdGuard Home - Network-wide ad blocking and DNS
+  adguard:
+    image: adguard/adguardhome:latest
+    container_name: adguardhome
+    restart: unless-stopped
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "3000:3000/tcp"
+      - "8080:80/tcp"
+      - "4443:443/tcp"
+      - "853:853/tcp"
+    volumes:
+      - ./adguard/work:/opt/adguardhome/work
+      - ./adguard/conf:/opt/adguardhome/conf
+    environment:
+      - TZ=UTC
+
+  # Nginx Proxy Manager - Reverse proxy with web UI
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx-proxy-manager
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "81:81"
+    volumes:
+      - ./proxy/data:/data
+      - ./proxy/letsencrypt:/etc/letsencrypt
+    environment:
+      - TZ=UTC
+
+  # Portainer - Docker management web UI
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9443:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./portainer/data:/data
+    environment:
+      - TZ=UTC
+
+  # Vaultwarden - Lightweight Bitwarden-compatible password manager
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    ports:
+      - "8090:80"
+    volumes:
+      - ./vaultwarden/data:/data
+    environment:
+      - DOMAIN=https://vault.example.com
+      - SIGNUPS_ALLOWED=false
+      - WEBSOCKET_ENABLED=true
+      - TZ=UTC
+      - ADMIN_TOKEN=your-admin-token-here
+
+  # Cloudflare Tunnel - Exposes services to the internet via Cloudflare's network
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=your-cloudflare-tunnel-token-here
+
+  # Homarr - Lightweight dashboard for homelab services
+  homarr:
+    image: ghcr.io/ajnart/homarr:latest
+    container_name: homarr
+    restart: unless-stopped
+    ports:
+      - "7575:7575"
+    volumes:
+      - ./homarr/configs:/app/data/configs
+      - ./homarr/icons:/app/public/icons
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=UTC
+
+# You can add more services here as needed:
+# - Uptime Kuma (monitoring)
+# - Gitea (self-hosted Git)
+# - Home Assistant (smart home)
+# - Grafana + Prometheus (observability)

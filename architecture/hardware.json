@@ -1,0 +1,96 @@
+{
+  "workshop_cluster": {
+    "description": "3-node Proxmox cluster for homelab workshop",
+    "total_specs": {
+      "cpu_cores": 14,
+      "cpu_threads": 28,
+      "ram_gb": 64,
+      "storage_gb": 1024,
+      "typical_power_watts": 135,
+      "total_cost_usd": 900
+    },
+    "nodes": [
+      {
+        "name": "prx01",
+        "role": "Master node",
+        "model": "Lenovo ThinkCentre M920q",
+        "cpu": "Intel Core i7-8700T (6c/12t)",
+        "ram": "32GB DDR4",
+        "storage": "512GB NVMe SSD",
+        "ip": "192.168.10.129",
+        "power": "~65W typical",
+        "cost": "$400 used"
+      },
+      {
+        "name": "prx02",
+        "role": "Worker node",
+        "model": "Dell OptiPlex 3060 Micro",
+        "cpu": "Intel Core i5-8500T (4c/8t)",
+        "ram": "16GB DDR4",
+        "storage": "256GB NVMe SSD",
+        "ip": "192.168.10.130",
+        "power": "~35W typical",
+        "cost": "$250 used"
+      },
+      {
+        "name": "prx03",
+        "role": "Worker node",
+        "model": "Dell OptiPlex 3060 Micro",
+        "cpu": "Intel Core i5-8500T (4c/8t)",
+        "ram": "16GB DDR4",
+        "storage": "256GB NVMe SSD",
+        "ip": "192.168.10.131",
+        "power": "~35W typical",
+        "cost": "$250 used"
+      }
+    ]
+  },
+
+  "network_devices": {
+    "router": {
+      "model": "MikroTik hAP ac3",
+      "role": "Main router with VLAN support",
+      "ip": "192.168.10.1",
+      "specs": {
+        "ethernet": "5x Gigabit LAN",
+        "wireless": "Dual-band WiFi 5",
+        "power": "12W max"
+      }
+    },
+    "switch": {
+      "model": "TP-Link LS108G",
+      "role": "Unmanaged 8-port switch",
+      "specs": {
+        "ethernet": "8x Gigabit LAN",
+        "fanless": true,
+        "power": "3.5W max"
+      },
+      "cost": "$25"
+    }
+  },
+
+  "vlans": [
+    { "id": 10, "name": "Management", "network": "192.168.10.0/24", "gateway": "192.168.10.1" },
+    { "id": 20, "name": "Servers",    "network": "192.168.20.0/24", "gateway": "192.168.20.1" },
+    { "id": 30, "name": "Trusted",    "network": "192.168.30.0/24", "gateway": "192.168.30.1" },
+    { "id": 40, "name": "IoT",        "network": "192.168.40.0/24", "gateway": "192.168.40.1" },
+    { "id": 50, "name": "Guest",      "network": "192.168.50.0/24", "gateway": "192.168.50.1" }
+  ],
+
+  "services": {
+    "docker_host": {
+      "type": "LXC Container",
+      "vmid": 100,
+      "ip": "192.168.10.50",
+      "runs_on": "prx01",
+      "services": [
+        { "name": "AdGuard Home", "port": 8080, "purpose": "DNS & ad blocking" },
+        { "name": "Nginx Proxy Manager", "port": 81, "purpose": "Reverse proxy" },
+        { "name": "Portainer", "port": 9000, "purpose": "Docker management" },
+        { "name": "Vaultwarden", "port": 8090, "purpose": "Password manager" },
+        { "name": "Cloudflared", "port": null, "purpose": "Cloudflare tunnel" },
+        { "name": "Homarr", "port": 7575, "purpose": "Dashboard" }
+      ]
+    }
+  }
+}

@@ -1,0 +1,20 @@
+# Proxmox API Configuration
+proxmox_api_url      = "https://192.168.10.129:8006/api2/json"
+proxmox_tls_insecure = true
+
+# API Token authentication (recommended)
+proxmox_api_token_id     = "root@pam!terraform"
+proxmox_api_token_secret = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# Alternative: Username/Password authentication
+# proxmox_user     = "root@pam"
+# proxmox_password = "your-proxmox-password-here"
+
+# SSH Configuration
+ssh_public_key = <<-EOT
+ssh-ed25519 AAAAC3... your-email@example.com
+EOT
+
+# Network Configuration
+default_gateway    = "192.168.10.1"
+default_nameserver = "192.168.10.1"

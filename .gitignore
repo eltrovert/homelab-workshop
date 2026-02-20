@@ -1,0 +1,59 @@
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+*.env
+secrets/
+*.secret
+*.key
+*.pem
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl
+
+# Credentials and tokens
+credentials
+credentials.*
+*.credentials
+*.token
+
+# SSH keys
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+
+# Node.js
+node_modules/
+package.json
+package-lock.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Docker volumes (if any local testing)
+**/data/
+**/work/
+**/conf/
